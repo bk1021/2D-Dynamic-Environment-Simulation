@@ -19,7 +19,7 @@ Use matplotlib to simulate a 2D environment with static obstacles, the simulated
 `self.cspace`: A 2D np.array of x,y (row, col) configuration space, True for free-collision, False otherwise
 
 `self.x_grid`, `self.y_grid`: Store x, y values for configuration space
-### Method
+#### Method
 `generate_cspace(self, resolution=0.1)`:
 
 `check_collision(self, point, buffer=0.1)`:
@@ -42,5 +42,8 @@ Use matplotlib to simulate a 2D environment with static obstacles, the simulated
 
 `visualize(self, sol_path)`: 
 
-
+## Usage
+```
+gg
+```
 
