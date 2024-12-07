@@ -57,7 +57,8 @@ def planner(env):
     ...
     return sol_path
 
-env.visualize(sol_path)
+
+env.visualize(planner(env))
 
 ```
 
