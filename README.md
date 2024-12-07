@@ -38,6 +38,8 @@ Use matplotlib to simulate a 2D environment with static obstacles, the simulated
 
 `ifReachGoal(self, xy)`: Check if a point (x, y) reaches goal (if Euclidean distance < 0.01)
 
+`check_line_coverage(p1, p2)`: Check the grid indices covered by a line, return a set of grid indices and True if no collision occur, False otherwise
+
 `evaluate_performance(self, sol_path, visited_idx, output_file='performance_metrics.txt')`: Evaluate the performance of a solution path considering path cost, coverage area, goal reaching, completeness, output metrics in txt file 
 
 `visualize(self, sol_path)`: Visualize the solution path in the environment. Obstacles are of red edges, start point is of yellow triangle, goal point is of green star, current point is of blue dot. Occupied grid cells are highlighted red, covered cells are highlighted green. 
