@@ -205,9 +205,7 @@ class Environment:
 
     def xy_to_idx(self, xy):
         # Convert raw (x, y) coordinates into corresponding cspace idx (i, j)
-        x = min(self.size_x, max(0, xy[0]))
-        y = min(self.size_y, max(0, xy[1]))
-        return round(x / self.resolution), round(y / self.resolution)
+        return round(xy[0] / self.resolution), round(xy[1] / self.resolution)
     
 
     def is_valid_move(self, idx):
@@ -260,11 +258,11 @@ class Environment:
         visited_idx = set()
         
         fig, ax = plt.subplots(figsize=(5, 5))
-        ax.set_xlim(0, self.size_x)
-        ax.set_ylim(0, self.size_y)
 
         for i in range(len(sol_path)):
             ax.clear()
+            ax.set_xlim(0, self.size_x)
+            ax.set_ylim(0, self.size_y)
             if i > 0:
                 idx1 = self.xy_to_idx(sol_path[i-1])
                 idx2 = self.xy_to_idx(sol_path[i])
@@ -272,10 +270,11 @@ class Environment:
                 for idx in idx_list:
                     if self.is_valid_move(idx):
                         visited_idx.add(idx)
+                        last_valid_idx = idx
                     else:
                         print("Collision occur!")
                         collide = True
-                        collision_idx = idx
+                        collision_idx = last_valid_idx
                         break
         
             # Plot the obstacles
