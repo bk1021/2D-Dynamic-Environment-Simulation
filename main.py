@@ -205,13 +205,48 @@ class Environment:
 
     def xy_to_idx(self, xy):
         # Convert raw (x, y) coordinates into corresponding cspace idx (i, j)
-        return round(xy[0] / self.resolution), round(xy[1] / self.resolution)
+        x = min(self.size_x, max(0, xy[0]))
+        y = min(self.size_y, max(0, xy[1]))
+        return round(x / self.resolution), round(y / self.resolution)
     
 
     def is_valid_move(self, idx):
         if 0 <= idx[0] < self.cspace.shape[0] and 0 <= idx[1] < self.cspace.shape[1]:
             return self.cspace[idx]
         return False
+    
+
+    def ifReachGoal(self, xy):
+        xy = np.array(xy)
+        return np.linalg.norm(xy - np.array(self.goal)) < 0.01
+            
+    def evaluate_performance(self, sol_path, visited_idx, output_file='performance_metrics.txt'):
+        path_cost = len(sol_path) - 1
+        if np.sum(self.cspace) > 0:
+            area_coverage = len(visited_idx)/np.sum(self.cspace)*100
+        else:
+            area_coverage = 100
+        reached_goal = self.ifReachGoal(sol_path[-1]) if sol_path else False
+        complete = reached_goal and abs(area_coverage - 100) < 1e-8
+
+        # Compile results into a dictionary
+        performance_metrics = {
+            'path_cost': path_cost,
+            'area_coverage': area_coverage,
+            'reached_goal': reached_goal,
+            'complete': complete
+        }
+
+        # Write the performance metrics to a text file
+        with open(output_file, 'w') as f:
+            f.write(f"Path Cost: {performance_metrics['path_cost']}\n")
+            f.write(f"Area Coverage: {performance_metrics['area_coverage']:.2f}%\n")
+            f.write(f"Reached Goal: {'Yes' if performance_metrics['reached_goal'] else 'No'}\n")
+            f.write(f"Complete: {'Yes' if performance_metrics['complete'] else 'No'}\n")
+
+        return performance_metrics
+
+
 
 
     def visualize(self, sol_path):
@@ -222,31 +257,26 @@ class Environment:
         dx = self.x_grid[1, 0] - self.x_grid[0, 0]
         dy = self.y_grid[0, 1] - self.y_grid[0, 0]
         collide = False
+        visited_idx = set()
         
         fig, ax = plt.subplots(figsize=(5, 5))
         ax.set_xlim(0, self.size_x)
         ax.set_ylim(0, self.size_y)
 
         for i in range(len(sol_path)):
-            # plt.clf()
+            ax.clear()
             if i > 0:
                 idx1 = self.xy_to_idx(sol_path[i-1])
                 idx2 = self.xy_to_idx(sol_path[i])
                 idx_list = bresenham_line(idx1[0], idx1[1], idx2[0], idx2[1])
                 for idx in idx_list:
                     if self.is_valid_move(idx):
-                        rect = plt.Rectangle((self.x_grid[idx[0], idx[1]] - dx / 2,
-                                            self.y_grid[idx[0], idx[1]] - dy / 2),
-                                            dx, dy,
-                                            facecolor='green', edgecolor='none', alpha=0.25)
-                        ax.add_patch(rect)
+                        visited_idx.add(idx)
                     else:
                         print("Collision occur!")
                         collide = True
                         collision_idx = idx
                         break
-
-            
         
             # Plot the obstacles
             for obs in self.obs:
@@ -272,12 +302,20 @@ class Environment:
                                     dx, dy,
                                     facecolor='red', edgecolor='none', alpha=0.25)
                 ax.add_patch(rect)
+
+            for idx in visited_idx:
+                rect = plt.Rectangle((self.x_grid[idx[0], idx[1]] - dx / 2,
+                                    self.y_grid[idx[0], idx[1]] - dy / 2),
+                                    dx, dy,
+                                    facecolor='green', edgecolor='none', alpha=0.25)
+                ax.add_patch(rect)
             
             plt.draw()
-            plt.pause(0.5)
+            plt.pause(0.01)
 
             if collide: break
             
+        print(self.evaluate_performance(sol_path, visited_idx))
         plt.show()
 
 
@@ -287,7 +325,10 @@ if __name__ == '__main__':
     env = Environment(5, 5)
     env.add_polyobs([(2, 2), (2, 3), (3, 3), (3, 2)])
     env.generate_cspace()
-    sol_path = [env.start, (3, 3), env.goal]
+    env.generate_start_goal()
+    sol_path = []
+    for dy in np.arange(0, 2, 0.1):
+        sol_path.append((env.start[0], env.start[1] + dy))
     
     # Add polygon obstacles
     # env.add_polyobs([(3, 3), (7, 3), (7, 7), (3, 7)])  # Square obstacle
