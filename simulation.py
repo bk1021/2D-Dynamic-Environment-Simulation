@@ -179,7 +179,8 @@ class Environment:
             
             vertices = arrange_vertices_ccw(vertices)
             self.add_polyobs(vertices)
-                
+
+
     def generate_start_goal(self):
         # generate random start & goal nodes
         max_attempts = 100
@@ -217,7 +218,21 @@ class Environment:
     def ifReachGoal(self, xy):
         xy = np.array(xy)
         return np.linalg.norm(xy - np.array(self.goal)) < 0.01
-            
+
+
+    def check_line_coverage(self, p1, p2):
+        covered_grid = set()
+        idx1 = self.xy_to_idx(p1)
+        idx2 = self.xy_to_idx(p2)
+        idx_list = bresenham_line(idx1[0], idx1[1], idx2[0], idx2[1])
+        for idx in idx_list:
+            if self.is_valid_move(idx):
+                covered_grid.add(idx)
+            else: # Collision
+                return covered_grid, False
+        return covered_grid, True
+
+
     def evaluate_performance(self, sol_path, visited_idx, output_file='performance_metrics.txt'):
         path_cost = len(sol_path) - 1
         if np.sum(self.cspace) > 0:
@@ -243,8 +258,6 @@ class Environment:
             f.write(f"Complete: {'Yes' if performance_metrics['complete'] else 'No'}\n")
 
         return performance_metrics
-
-
 
 
     def visualize(self, sol_path):
