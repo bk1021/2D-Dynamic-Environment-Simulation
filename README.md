@@ -46,7 +46,7 @@ Use matplotlib to simulate a 2D environment with static obstacles, the simulated
 ```
 # command line
 cd /path/to/planning_algorithm.py
-git clone
+git clone https://github.com/bk1021/roomba-path-planning-simulation
 
 # in python file
 from simulation import Environment
