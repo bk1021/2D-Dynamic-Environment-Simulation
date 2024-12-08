@@ -174,10 +174,20 @@ class Environment:
                     x = max(1, min(x, self.size_x - 1))
                     y = max(1, min(y, self.size_y - 1))
                     vertices.append((x, y))
-                if not are_collinear(vertices) and not has_duplicates(vertices):
+
+                if are_collinear(vertices) or has_duplicates(vertices):
+                    continue
+
+                vertices = arrange_vertices_ccw(vertices)
+                polygon = Polygon(vertices)
+                intersect = False
+                for obs in self.obs:
+                    if obs.intersects(polygon):
+                        intersect = True
+                        break
+                if not intersect:
                     break
-            
-            vertices = arrange_vertices_ccw(vertices)
+  
             self.add_polyobs(vertices)
 
 
@@ -335,9 +345,9 @@ class Environment:
 if __name__ == '__main__':
     # Create a 20x20 environment
     env = Environment(5, 5)
-    env.add_polyobs([(2, 2), (2, 3), (3, 3), (3, 2)])
-    env.generate_cspace()
-    env.generate_start_goal()
+    # env.add_polyobs([(2, 2), (2, 3), (3, 3), (3, 2)])
+    # env.generate_cspace()
+    # env.generate_start_goal()
     sol_path = []
     for dy in np.arange(0, 2, 0.1):
         sol_path.append((env.start[0], env.start[1] + dy))
