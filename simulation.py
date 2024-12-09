@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from shapely.geometry import Polygon, Point
+from shapely.geometry import Polygon, Point, MultiPolygon
 from shapely.ops import unary_union
 from tqdm import tqdm
 from matplotlib.cm import get_cmap
 from matplotlib.colors import Normalize
+import time
 
 
 # Helper functions
@@ -98,7 +99,10 @@ class Environment:
             np.random.seed(random_seed)
 
         self.generate_obstacles(n_obs) # Generate self.obs
+        start_time = time.time()
         self.generate_cspace(resolution) # Generate self.cspace, self.x_grid, self.y_grid
+        end_time = time.time()
+        self.cspace_generation_time = end_time - start_time
         self.generate_start_goal() # Generate self.start, self.goal
         self.current_pos = self.start
 
@@ -121,7 +125,7 @@ class Environment:
         self.x_grid, self.y_grid = np.meshgrid(x_values, y_values, indexing='ij')
 
 
-    def check_collision(self, point, buffer=0.1):
+    def check_collision(self, point, buffer=0.05):
         point = Point(point)
         buffered_obs = [obs.buffer(buffer) for obs in self.obs]
         combined_buffered_obs = unary_union(buffered_obs)
@@ -233,7 +237,7 @@ class Environment:
 
     def ifReachGoal(self, xy):
         xy = np.array(xy)
-        return np.linalg.norm(xy - np.array(self.goal)) < 0.01
+        return np.linalg.norm(xy - np.array(self.goal)) < 0.08
 
 
     def check_line_coverage(self, p1, p2):
@@ -249,8 +253,8 @@ class Environment:
         return covered_grid, True
 
 
-    def evaluate_performance(self, sol_path, visited_idx, output_file='performance_metrics.txt'):
-        path_cost = len(sol_path) - 1
+    def evaluate_performance(self, sol_path, visited_idx, total_visited_idx, output_file='performance_metrics.txt'):
+        path_cost = len(total_visited_idx) - 1
         if np.sum(self.cspace) > 0:
             area_coverage = len(visited_idx)/np.sum(self.cspace)*100
         else:
@@ -285,6 +289,8 @@ class Environment:
         dy = self.y_grid[0, 1] - self.y_grid[0, 0]
         collide = False
         visited_idx = set()
+        visited_idx.add(self.xy_to_idx(sol_path[1]))
+        total_visited_idx = [self.xy_to_idx(sol_path[1])]
         
         fig, ax = plt.subplots(figsize=(5, 5))
 
@@ -299,6 +305,7 @@ class Environment:
                 for idx in idx_list:
                     if self.is_valid_move(idx):
                         visited_idx.add(idx)
+                        total_visited_idx.append(idx)
                         last_valid_idx = idx
                     else:
                         print("Collision occur!")
@@ -344,6 +351,11 @@ class Environment:
 
             if strips is not None:
                 for strip in strips:
+                    if isinstance(strip, MultiPolygon):
+                        print('Catch error')
+                        for i, polygon in enumerate(strip.geoms):
+                            x, y = polygon.exterior.xy
+                            print(f"polygon {i}, {x, y}")
                     x, y = strip.exterior.xy
                     ax.plot(x, y, 'm')
 
@@ -362,7 +374,7 @@ class Environment:
 
             if collide: break
             
-        print(self.evaluate_performance(sol_path, visited_idx))
+        print(self.evaluate_performance(sol_path, visited_idx, total_visited_idx))
         plt.show()
 
 
