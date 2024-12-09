@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 from tqdm import tqdm
+from matplotlib.cm import get_cmap
+from matplotlib.colors import Normalize
 
 
 # Helper functions
@@ -219,6 +221,10 @@ class Environment:
         return round(xy[0] / self.resolution), round(xy[1] / self.resolution)
     
 
+    def idx_to_xy(self, idx):
+        return self.x_grid[idx], self.y_grid[idx]
+        
+
     def is_valid_move(self, idx):
         if 0 <= idx[0] < self.cspace.shape[0] and 0 <= idx[1] < self.cspace.shape[1]:
             return self.cspace[idx]
@@ -270,7 +276,7 @@ class Environment:
         return performance_metrics
 
 
-    def visualize(self, sol_path):
+    def visualize(self, sol_path, strips=None, waypoints=None):
         """
         Visualize the environment with obstacles and robot's position.
         """
@@ -308,8 +314,12 @@ class Environment:
             # Plot the robot's current position
             ax.plot(self.start[0], self.start[1], 'y^', markersize=12)
             ax.plot(self.goal[0], self.goal[1], 'g*', markersize=12)
-            self.current_pos = sol_path[i] if not collide else (self.x_grid[collision_idx[0], collision_idx[1]], self.y_grid[collision_idx[0], collision_idx[1]])
+            self.current_pos = sol_path[i]
             ax.plot(self.current_pos[0], self.current_pos[1], 'bo')
+            if i > 0:
+                self.previous_pos = sol_path[i - 1]
+                ax.plot(self.previous_pos[0], self.previous_pos[1], 'bo', alpha=0.5)
+                ax.plot((self.previous_pos[0], self.current_pos[0]), (self.previous_pos[1], self.current_pos[1]), 'b', alpha=0.5)
 
             # Plot the C-space grid with light lines
             for i in range(self.x_grid.shape[0]):
@@ -331,6 +341,21 @@ class Environment:
                                     dx, dy,
                                     facecolor='green', edgecolor='none', alpha=0.25)
                 ax.add_patch(rect)
+
+            if strips is not None:
+                for strip in strips:
+                    x, y = strip.exterior.xy
+                    ax.plot(x, y, 'm')
+
+            if waypoints is not None:
+                # Normalize the indices of waypoints to use the full range of the colormap
+                norm = Normalize(vmin=0, vmax=len(waypoints) - 1)
+                cmap = get_cmap('plasma')
+
+                # Plot each waypoint with its corresponding color from the colormap
+                for idx, (x, y) in enumerate(waypoints):
+                    color = cmap(norm(idx))
+                    ax.plot(x, y, 'd', color=color, alpha=0.3)
             
             plt.draw()
             plt.pause(0.01)
